@@ -1,0 +1,365 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Search Solver</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 18px;
+  background: #f3f3f3;
+  color: #171717;
+  font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+main { max-width: 650px; margin: auto; }
+
+header { text-align: center; padding: 22px 10px; }
+header h1 { font-size: 27px; margin: 0 0 8px; }
+header p { color: #777; margin: 0; font-size: 14px; }
+
+.card, details {
+  background: white;
+  padding: 17px;
+  border-radius: 13px;
+  margin-bottom: 15px;
+  border: 1px solid #e3e3e3;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+label { font-weight: 700; font-size: 15px; }
+
+textarea {
+  width: 100%;
+  min-height: 125px;
+  padding: 13px;
+  border: 1px solid #d5d5d5;
+  border-radius: 9px;
+  font-size: 15px;
+  resize: vertical;
+  font-family: monospace;
+  background: #fafafa;
+  color: #111;
+}
+
+textarea:focus {
+  outline: 2px solid #555;
+  border-color: #555;
+}
+
+.controls {
+  display: flex;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary {
+  background: #ededed;
+  color: #222;
+  flex: 1;
+}
+
+.solve {
+  width: 100%;
+  padding: 16px;
+  background: #171717;
+  color: white;
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+summary { font-weight: 700; cursor: pointer; }
+
+details p, details ol {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #555;
+}
+
+#results { margin-top: 20px; line-height: 1.6; }
+
+.found, .missing {
+  padding: 12px;
+  border-radius: 9px;
+  margin: 8px 0;
+}
+
+.found {
+  background: #ededed;
+  border-left: 4px solid #222;
+}
+
+.missing {
+  background: #f5f5f5;
+  border-left: 4px solid #999;
+}
+
+.error {
+  background: #eee;
+  border: 1px solid #aaa;
+  padding: 13px;
+  border-radius: 9px;
+  margin-top: 12px;
+}
+
+#grid {
+  display: grid;
+  gap: 3px;
+  margin-top: 15px;
+  overflow-x: auto;
+}
+
+.cell {
+  background: #eee;
+  padding: 6px 2px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 3px;
+  min-width: 20px;
+  font-size: 12px;
+}
+
+.cell.hit { background: #222; color: white; }
+
+footer {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  padding: 20px;
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<header>
+  <h1>Word Search Solver</h1>
+  <p>Find every word. In every direction.</p>
+</header>
+
+<details>
+  <summary>How to use the solver ▾</summary>
+  <ol>
+    <li>Paste your puzzle letters into the first box.</li>
+    <li>Put each row of letters on a separate line.</li>
+    <li>Paste the words you need to find into the second box.</li>
+    <li>Separate words using new lines or commas.</li>
+    <li>Tap SOLVE WORD SEARCH.</li>
+    <li>Check the coordinates and highlighted letters.</li>
+  </ol>
+  <p>The solver checks horizontal, vertical, diagonal,
+  backwards, and upside-down directions.</p>
+</details>
+
+<div class="card">
+  <div class="label-row">
+    <label for="puzzle">Puzzle letters</label>
+  </div>
+  <textarea id="puzzle" placeholder="Paste your puzzle grid here..."></textarea>
+  <div class="controls">
+    <button class="secondary" onclick="pasteText('puzzle')">Paste</button>
+    <button class="secondary" onclick="clearText('puzzle')">Clear</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="label-row">
+    <label for="words">Words to find</label>
+  </div>
+  <textarea id="words" placeholder="Paste your word list here..."></textarea>
+  <div class="controls">
+    <button class="secondary" onclick="pasteText('words')">Paste</button>
+    <button class="secondary" onclick="clearText('words')">Clear</button>
+  </div>
+</div>
+
+<button class="solve" onclick="solve()">SOLVE WORD SEARCH</button>
+
+<div id="results" aria-live="polite"></div>
+<div id="grid"></div>
+
+<footer>Word Search Solver · Instant Search</footer>
+
+</main>
+
+<script>
+function clean(s) {
+  return s.toUpperCase().replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function clearText(id) {
+  document.getElementById(id).value = "";
+  if (id === "puzzle") {
+    document.getElementById("grid").innerHTML = "";
+  }
+  document.getElementById("results").innerHTML = "";
+}
+
+async function pasteText(id) {
+  const box = document.getElementById(id);
+
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) {
+      showError("Your clipboard is empty.");
+      return;
+    }
+    box.value = text;
+    document.getElementById("results").innerHTML = "";
+  } catch (e) {
+    box.focus();
+    showError("Clipboard access was blocked. Tap and hold inside the text box, then choose Paste.");
+  }
+}
+
+function showError(message) {
+  document.getElementById("results").innerHTML =
+    '<div class="error"><b>Input error</b><br>' +
+    message + '</div>';
+}
+
+function solve() {
+  const puzzleText = document.getElementById("puzzle").value.trim();
+  const wordText = document.getElementById("words").value.trim();
+
+  const output = document.getElementById("results");
+  const gridBox = document.getElementById("grid");
+
+  output.innerHTML = "";
+  gridBox.innerHTML = "";
+
+  if (!puzzleText || !wordText) {
+    showError("Please enter both the puzzle letters and the word list.");
+    return;
+  }
+
+  const rows = puzzleText.split(/\n/)
+    .map(r => clean(r))
+    .filter(r => r.length);
+
+  const words = wordText.split(/[\n,;]+/)
+    .map(clean).filter(Boolean);
+
+  if (!rows.length || !words.length) {
+    showError("Your puzzle or word list contains no usable letters.");
+    return;
+  }
+
+  const width = rows[0].length;
+
+  if (rows.some(r => r.length !== width)) {
+    showError("Your puzzle rows have different lengths. Make sure every row has the same number of letters.");
+    return;
+  }
+
+  if (width < 2 || rows.length < 2) {
+    showError("Your puzzle must have at least 2 rows and 2 columns.");
+    return;
+  }
+
+  const height = rows.length;
+  const directions = [
+    [-1, 0, "up"],
+    [1, 0, "down"],
+    [0, -1, "left"],
+    [0, 1, "right"],
+    [-1, -1, "up-left diagonal"],
+    [-1, 1, "up-right diagonal"],
+    [1, -1, "down-left diagonal"],
+    [1, 1, "down-right diagonal"]
+  ];
+
+  const hits = new Set();
+  let foundCount = 0;
+  const uniqueWords = [...new Set(words)];
+
+  for (const word of uniqueWords) {
+    let matches = [];
+
+    for (let r = 0; r < height; r++) {
+      for (let c = 0; c < width; c++) {
+        for (const [dr, dc, direction] of directions) {
+          const endR = r + dr * (word.length - 1);
+          const endC = c + dc * (word.length - 1);
+
+          if (endR < 0 || endR >= height ||
+              endC < 0 || endC >= width) continue;
+
+          let match = true;
+
+          for (let i = 0; i < word.length; i++) {
+            if (rows[r + dr * i][c + dc * i] !== word[i]) {
+              match = false;
+              break;
+            }
+          }
+
+          if (match) {
+            matches.push({r, c, endR, endC, direction});
+
+            for (let i = 0; i < word.length; i++) {
+              hits.add((r + dr * i) + "," + (c + dc * i));
+            }
+          }
+        }
+      }
+    }
+
+    if (matches.length) {
+      foundCount++;
+
+      for (const m of matches) {
+        output.innerHTML += `
+          <div class="found">
+            <b>✓ ${word}</b><br>
+            Start: Row ${m.r + 1}, Column ${m.c + 1}<br>
+            End: Row ${m.endR + 1}, Column ${m.endC + 1}<br>
+            Direction: ${m.direction}
+          </div>`;
+      }
+    } else {
+      output.innerHTML += `
+        <div class="missing">✗ ${word} — Not found</div>`;
+    }
+  }
+
+  output.innerHTML =
+    `<h3>Found ${foundCount} / ${uniqueWords.length} words</h3>` +
+    output.innerHTML;
+
+  gridBox.style.gridTemplateColumns =
+    `repeat(${width}, minmax(22px, 1fr))`;
+
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell" +
+        (hits.has(r + "," + c) ? " hit" : "");
+      cell.textContent = rows[r][c];
+      gridBox.appendChild(cell);
+    }
+  }
+}
+</script>
+</body>
+</html>
