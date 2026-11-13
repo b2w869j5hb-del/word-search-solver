@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Word Search Solver</title>
+
 <style>
 * { box-sizing: border-box; }
 
@@ -106,6 +107,18 @@ details p, details ol {
 .found {
   background: #ededed;
   border-left: 4px solid #222;
+  cursor: pointer;
+}
+
+.found.selected {
+  background: #d8d8d8;
+  border-left: 5px solid #000;
+}
+
+.word-arrow {
+  font-size: 19px;
+  margin-left: 5px;
+  font-weight: bold;
 }
 
 .missing {
@@ -138,7 +151,10 @@ details p, details ol {
   font-size: 12px;
 }
 
-.cell.hit { background: #222; color: white; }
+.cell.hit {
+  background: #222;
+  color: white;
+}
 
 footer {
   text-align: center;
@@ -165,7 +181,7 @@ footer {
     <li>Paste the words you need to find into the second box.</li>
     <li>Separate words using new lines or commas.</li>
     <li>Tap SOLVE WORD SEARCH.</li>
-    <li>Check the coordinates and highlighted letters.</li>
+    <li>Tap a found word to highlight its location.</li>
   </ol>
   <p>The solver checks horizontal, vertical, diagonal,
   backwards, and upside-down directions.</p>
@@ -198,7 +214,7 @@ footer {
 <div id="results" aria-live="polite"></div>
 <div id="grid"></div>
 
-<footer>Word Search Solver · Instant Search</footer>
+<footer>Word Search Solver · Version 3.0</footer>
 
 </main>
 
@@ -207,12 +223,28 @@ function clean(s) {
   return s.toUpperCase().replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+const directions = [
+  [-1, 0, "up", "↑"],
+  [1, 0, "down", "↓"],
+  [0, -1, "left", "←"],
+  [0, 1, "right", "→"],
+  [-1, -1, "up-left diagonal", "↖"],
+  [-1, 1, "up-right diagonal", "↗"],
+  [1, -1, "down-left diagonal", "↙"],
+  [1, 1, "down-right diagonal", "↘"]
+];
+
+let currentGrid = [];
+let wordResults = [];
+let selectedMatch = null;
+
 function clearText(id) {
   document.getElementById(id).value = "";
-  if (id === "puzzle") {
-    document.getElementById("grid").innerHTML = "";
-  }
   document.getElementById("results").innerHTML = "";
+  document.getElementById("grid").innerHTML = "";
+  currentGrid = [];
+  wordResults = [];
+  selectedMatch = null;
 }
 
 async function pasteText(id) {
@@ -220,10 +252,12 @@ async function pasteText(id) {
 
   try {
     const text = await navigator.clipboard.readText();
+
     if (!text) {
       showError("Your clipboard is empty.");
       return;
     }
+
     box.value = text;
     document.getElementById("results").innerHTML = "";
   } catch (e) {
@@ -247,6 +281,8 @@ function solve() {
 
   output.innerHTML = "";
   gridBox.innerHTML = "";
+  wordResults = [];
+  selectedMatch = null;
 
   if (!puzzleText || !wordText) {
     showError("Please enter both the puzzle letters and the word list.");
@@ -278,16 +314,8 @@ function solve() {
   }
 
   const height = rows.length;
-  const directions = [
-    [-1, 0, "up"],
-    [1, 0, "down"],
-    [0, -1, "left"],
-    [0, 1, "right"],
-    [-1, -1, "up-left diagonal"],
-    [-1, 1, "up-right diagonal"],
-    [1, -1, "down-left diagonal"],
-    [1, 1, "down-right diagonal"]
-  ];
+
+  currentGrid = rows;
 
   const hits = new Set();
   let foundCount = 0;
@@ -298,7 +326,7 @@ function solve() {
 
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
-        for (const [dr, dc, direction] of directions) {
+        for (const [dr, dc, direction, arrow] of directions) {
           const endR = r + dr * (word.length - 1);
           const endC = c + dc * (word.length - 1);
 
@@ -315,37 +343,130 @@ function solve() {
           }
 
           if (match) {
-            matches.push({r, c, endR, endC, direction});
+            const cells = [];
 
             for (let i = 0; i < word.length; i++) {
-              hits.add((r + dr * i) + "," + (c + dc * i));
+              const cell = {
+                r: r + dr * i,
+                c: c + dc * i
+              };
+
+              cells.push(cell);
+              hits.add(cell.r + "," + cell.c);
             }
+
+            matches.push({
+              r, c, endR, endC,
+              direction, arrow, cells
+            });
           }
         }
       }
     }
 
-    if (matches.length) {
-      foundCount++;
+    wordResults.push({ word, matches });
 
-      for (const m of matches) {
-        output.innerHTML += `
-          <div class="found">
-            <b>✓ ${word}</b><br>
-            Start: Row ${m.r + 1}, Column ${m.c + 1}<br>
-            End: Row ${m.endR + 1}, Column ${m.endC + 1}<br>
-            Direction: ${m.direction}
-          </div>`;
-      }
-    } else {
-      output.innerHTML += `
-        <div class="missing">✗ ${word} — Not found</div>`;
-    }
+    if (matches.length) foundCount++;
   }
 
   output.innerHTML =
-    `<h3>Found ${foundCount} / ${uniqueWords.length} words</h3>` +
-    output.innerHTML;
+    `<h3>Found ${foundCount} / ${uniqueWords.length} words</h3>`;
+
+  wordResults.forEach((item, wordIndex) => {
+    if (item.matches.length) {
+      item.matches.forEach((m, matchIndex) => {
+        const card = document.createElement("div");
+
+        card.className = "found";
+        card.dataset.wordIndex = wordIndex;
+        card.dataset.matchIndex = matchIndex;
+
+        const title = document.createElement("b");
+        title.textContent = item.word;
+
+        const arrow = document.createElement("span");
+        arrow.className = "word-arrow";
+        arrow.textContent = m.arrow;
+
+        card.appendChild(title);
+        card.appendChild(arrow);
+
+        const coordinates = document.createElement("div");
+        coordinates.innerHTML =
+          `Start: Row ${m.r + 1}, Column ${m.c + 1}<br>` +
+          `End: Row ${m.endR + 1}, Column ${m.endC + 1}<br>` +
+          `Direction: ${m.direction}`;
+
+        card.appendChild(coordinates);
+
+        card.addEventListener("click", () => {
+          selectWord(wordIndex, matchIndex);
+        });
+
+        output.appendChild(card);
+      });
+    } else {
+      const card = document.createElement("div");
+      card.className = "missing";
+      card.textContent = `✗ ${item.word} — Not found`;
+      output.appendChild(card);
+    }
+  });
+
+  renderGrid();
+}
+
+function selectWord(wordIndex, matchIndex) {
+  if (
+    selectedMatch &&
+    selectedMatch.wordIndex === wordIndex &&
+    selectedMatch.matchIndex === matchIndex
+  ) {
+    selectedMatch = null;
+  } else {
+    selectedMatch = { wordIndex, matchIndex };
+  }
+
+  renderResultsSelection();
+  renderGrid();
+}
+
+function renderResultsSelection() {
+  document.querySelectorAll(".found").forEach(card => {
+    const isSelected = selectedMatch &&
+      Number(card.dataset.wordIndex) === selectedMatch.wordIndex &&
+      Number(card.dataset.matchIndex) === selectedMatch.matchIndex;
+
+    card.classList.toggle("selected", !!isSelected);
+  });
+}
+
+function renderGrid() {
+  const gridBox = document.getElementById("grid");
+  gridBox.innerHTML = "";
+
+  if (!currentGrid.length) return;
+
+  const height = currentGrid.length;
+  const width = currentGrid[0].length;
+  const hits = new Set();
+
+  if (selectedMatch) {
+    const match = wordResults[selectedMatch.wordIndex]
+      .matches[selectedMatch.matchIndex];
+
+    match.cells.forEach(cell => {
+      hits.add(cell.r + "," + cell.c);
+    });
+  } else {
+    wordResults.forEach(item => {
+      item.matches.forEach(match => {
+        match.cells.forEach(cell => {
+          hits.add(cell.r + "," + cell.c);
+        });
+      });
+    });
+  }
 
   gridBox.style.gridTemplateColumns =
     `repeat(${width}, minmax(22px, 1fr))`;
@@ -353,13 +474,16 @@ function solve() {
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
       const cell = document.createElement("div");
+
       cell.className = "cell" +
         (hits.has(r + "," + c) ? " hit" : "");
-      cell.textContent = rows[r][c];
+
+      cell.textContent = currentGrid[r][c];
       gridBox.appendChild(cell);
     }
   }
 }
 </script>
+
 </body>
 </html>
