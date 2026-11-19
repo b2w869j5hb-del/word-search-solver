@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,62 +6,122 @@
 <title>Word Search Solver</title>
 
 <style>
+:root {
+  --bg: #f3f3f3;
+  --text: #171717;
+  --muted: #5c5c5c;
+  --card: #ffffff;
+  --border: #e3e3e3;
+  --input-bg: #fafafa;
+  --input-border: #d5d5d5;
+  --btn: #ededed;
+  --btn-text: #222;
+  --solve-bg: #171717;
+  --solve-text: #ffffff;
+  --found-bg: #ededed;
+  --found-sel: #d0d0d0;
+  --accent: #222;
+  --miss-bg: #f5f5f5;
+  --cell: #eee;
+  --cell-sel: #222;
+  --cell-sel-text: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121212;
+    --text: #eeeeee;
+    --muted: #a8a8a8;
+    --card: #1e1e1e;
+    --border: #333;
+    --input-bg: #161616;
+    --input-border: #444;
+    --btn: #2e2e2e;
+    --btn-text: #eee;
+    --solve-bg: #eeeeee;
+    --solve-text: #111;
+    --found-bg: #2a2a2a;
+    --found-sel: #3d3d3d;
+    --accent: #ddd;
+    --miss-bg: #1a1a1a;
+    --cell: #2a2a2a;
+    --cell-sel: #f0f0f0;
+    --cell-sel-text: #111;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121212;
+  --text: #eeeeee;
+  --muted: #a8a8a8;
+  --card: #1e1e1e;
+  --border: #333;
+  --input-bg: #161616;
+  --input-border: #444;
+  --btn: #2e2e2e;
+  --btn-text: #eee;
+  --solve-bg: #eeeeee;
+  --solve-text: #111;
+  --found-bg: #2a2a2a;
+  --found-sel: #3d3d3d;
+  --accent: #ddd;
+  --miss-bg: #1a1a1a;
+  --cell: #2a2a2a;
+  --cell-sel: #f0f0f0;
+  --cell-sel-text: #111;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
   padding: 18px;
-  background: #f3f3f3;
-  color: #171717;
+  background: var(--bg);
+  color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
 }
 
 main { max-width: 650px; margin: auto; }
 
-header { text-align: center; padding: 22px 10px; }
+header { text-align: center; padding: 22px 10px; position: relative; }
+#themeBtn { position: absolute; top: 14px; right: 4px; background: var(--btn); color: var(--btn-text); padding: 8px 11px; font-size: 16px; }
 header h1 { font-size: 27px; margin: 0 0 8px; }
-header p { color: #777; margin: 0; font-size: 14px; }
+header p { color: var(--muted); margin: 0; font-size: 14px; }
 
 .card, details {
-  background: white;
+  background: var(--card);
   padding: 17px;
   border-radius: 13px;
   margin-bottom: 15px;
-  border: 1px solid #e3e3e3;
+  border: 1px solid var(--border);
 }
 
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 9px;
-}
+label { font-weight: 700; font-size: 15px; display: block; margin-bottom: 9px; }
 
-label { font-weight: 700; font-size: 15px; }
+textarea, input[type="number"] {
+  border: 1px solid var(--input-border);
+  border-radius: 9px;
+  font-size: 16px; /* prevents iOS zoom on focus */
+  background: var(--input-bg);
+  color: var(--text);
+}
 
 textarea {
   width: 100%;
   min-height: 125px;
   padding: 13px;
-  border: 1px solid #d5d5d5;
-  border-radius: 9px;
-  font-size: 15px;
   resize: vertical;
   font-family: monospace;
-  background: #fafafa;
-  color: #111;
 }
 
-textarea:focus {
-  outline: 2px solid #555;
-  border-color: #555;
-}
+input[type="number"] { width: 80px; padding: 8px; }
 
-.controls {
-  display: flex;
-  gap: 9px;
-  margin-top: 10px;
-}
+textarea:focus, input:focus { outline: 2px solid var(--accent); }
+
+.width-row { margin-top: 10px; font-size: 14px; color: var(--muted); }
+.width-row label { display: inline; font-weight: 400; font-size: 14px; margin-right: 8px; }
+
+.controls { display: flex; gap: 9px; margin-top: 10px; }
 
 button {
   border: 0;
@@ -71,64 +130,51 @@ button {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
 }
 
-.secondary {
-  background: #ededed;
-  color: #222;
-  flex: 1;
-}
+.secondary { background: var(--btn); color: var(--btn-text); flex: 1; }
 
 .solve {
   width: 100%;
   padding: 16px;
-  background: #171717;
-  color: white;
+  background: var(--solve-bg);
+  color: var(--solve-text);
   font-size: 16px;
   margin-top: 5px;
 }
 
 summary { font-weight: 700; cursor: pointer; }
 
-details p, details ol {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #555;
-}
+details p, details ol { font-size: 14px; line-height: 1.7; color: var(--muted); }
 
-#results { margin-top: 20px; line-height: 1.6; }
+#results { margin-top: 20px; line-height: 1.6; scroll-margin-top: 12px; }
+#results h2 { font-size: 19px; margin: 0 0 8px; }
 
 .found, .missing {
+  display: block;
+  width: 100%;
+  text-align: left;
   padding: 12px;
   border-radius: 9px;
   margin: 8px 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text);
 }
 
-.found {
-  background: #ededed;
-  border-left: 4px solid #222;
-  cursor: pointer;
-}
+.found { background: var(--found-bg); border-left: 4px solid var(--swatch, var(--accent)); }
+.found.selected { background: var(--found-sel); border-left-width: 8px; }
+.found:focus-visible { outline: 2px solid var(--accent); }
 
-.found.selected {
-  background: #d8d8d8;
-  border-left: 5px solid #000;
-}
+.word-arrow { font-size: 19px; margin-left: 5px; font-weight: bold; }
+.count { color: var(--muted); font-size: 13px; margin-left: 6px; }
 
-.word-arrow {
-  font-size: 19px;
-  margin-left: 5px;
-  font-weight: bold;
-}
-
-.missing {
-  background: #f5f5f5;
-  border-left: 4px solid #999;
-}
+.missing { background: var(--miss-bg); border-left: 4px solid #888; color: var(--muted); }
 
 .error {
-  background: #eee;
-  border: 1px solid #aaa;
+  background: var(--found-bg);
+  border: 1px solid #999;
   padding: 13px;
   border-radius: 9px;
   margin-top: 12px;
@@ -137,31 +183,24 @@ details p, details ol {
 #grid {
   display: grid;
   gap: 3px;
-  margin-top: 15px;
+  margin: 15px 0;
   overflow-x: auto;
+  scroll-margin-top: 12px;
 }
 
 .cell {
-  background: #eee;
+  background: var(--cell);
   padding: 6px 2px;
   text-align: center;
   font-weight: bold;
   border-radius: 3px;
-  min-width: 20px;
-  font-size: 12px;
+  min-width: 0;
 }
 
-.cell.hit {
-  background: #222;
-  color: white;
-}
+.cell.hit { color: #fff; }
+.cell.sel { background: var(--cell-sel); color: var(--cell-sel-text); }
 
-footer {
-  text-align: center;
-  color: #999;
-  font-size: 12px;
-  padding: 20px;
-}
+footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; }
 </style>
 </head>
 
@@ -169,58 +208,63 @@ footer {
 <main>
 
 <header>
+  <button id="themeBtn" type="button" aria-label="Toggle dark mode">🌓</button>
   <h1>Word Search Solver</h1>
   <p>Find every word. In every direction.</p>
 </header>
 
 <details>
-  <summary>How to use the solver ▾</summary>
+  <summary>How to use the solver</summary>
   <ol>
-    <li>Paste your puzzle letters into the first box.</li>
-    <li>Put each row of letters on a separate line.</li>
-    <li>Paste the words you need to find into the second box.</li>
-    <li>Separate words using new lines or commas.</li>
+    <li>Paste your puzzle letters into the first box, one row per line.</li>
+    <li>Paste the words to find into the second box, separated by new lines or commas.</li>
     <li>Tap SOLVE WORD SEARCH.</li>
     <li>Tap a found word to highlight its location.</li>
   </ol>
-  <p>The solver checks horizontal, vertical, diagonal,
-  backwards, and upside-down directions.</p>
+  <p>The solver checks horizontal, vertical, diagonal, and backwards directions.
+  If your puzzle pasted as one long line, enter the grid width below the puzzle box.</p>
 </details>
 
 <div class="card">
-  <div class="label-row">
-    <label for="puzzle">Puzzle letters</label>
-  </div>
+  <label for="puzzle">Puzzle letters</label>
   <textarea id="puzzle" placeholder="Paste your puzzle grid here..."></textarea>
+  <div class="width-row">
+    <label for="gridWidth">Grid width (only if puzzle is one line):</label>
+    <input type="number" id="gridWidth" min="1" inputmode="numeric">
+  </div>
   <div class="controls">
-    <button class="secondary" onclick="pasteText('puzzle')">Paste</button>
-    <button class="secondary" onclick="clearText('puzzle')">Clear</button>
+    <button class="secondary" data-paste="puzzle">Paste</button>
+    <button class="secondary" data-clear="puzzle">Clear</button>
   </div>
 </div>
 
 <div class="card">
-  <div class="label-row">
-    <label for="words">Words to find</label>
-  </div>
+  <label for="words">Words to find</label>
   <textarea id="words" placeholder="Paste your word list here..."></textarea>
   <div class="controls">
-    <button class="secondary" onclick="pasteText('words')">Paste</button>
-    <button class="secondary" onclick="clearText('words')">Clear</button>
+    <button class="secondary" data-paste="words">Paste</button>
+    <button class="secondary" data-clear="words">Clear</button>
   </div>
 </div>
 
-<button class="solve" onclick="solve()">SOLVE WORD SEARCH</button>
+<button class="solve" id="solveBtn">SOLVE WORD SEARCH</button>
 
-<div id="results" aria-live="polite"></div>
-<div id="grid"></div>
+<div id="grid" aria-label="Puzzle grid"></div>
+<div id="results" aria-live="polite" tabindex="-1"></div>
 
-<footer>Word Search Solver · Version 3.0</footer>
+<footer>Word Search Solver · Version 3.1</footer>
 
 </main>
 
 <script>
+// Uppercase and keep letters/digits, without letting characters like ß expand to "SS".
 function clean(s) {
-  return s.toUpperCase().replace(/[^\p{L}\p{N}]/gu, "");
+  let out = "";
+  for (const ch of s.normalize("NFC")) {
+    const up = ch.toUpperCase();
+    out += up.length === ch.length ? up : ch;
+  }
+  return out.replace(/[^\p{L}\p{N}]/gu, "");
 }
 
 const directions = [
@@ -234,255 +278,265 @@ const directions = [
   [1, 1, "down-right diagonal", "↘"]
 ];
 
+const $ = id => document.getElementById(id);
+const hueFor = i => (i * 47) % 360;
+
 let currentGrid = [];
 let wordResults = [];
 let selectedMatch = null;
 
-function clearText(id) {
-  document.getElementById(id).value = "";
-  document.getElementById("results").innerHTML = "";
-  document.getElementById("grid").innerHTML = "";
+function resetOutput() {
+  $("results").innerHTML = "";
+  $("grid").innerHTML = "";
   currentGrid = [];
   wordResults = [];
   selectedMatch = null;
 }
 
-async function pasteText(id) {
-  const box = document.getElementById(id);
+function showError(message) {
+  const box = document.createElement("div");
+  box.className = "error";
+  const b = document.createElement("b");
+  b.textContent = "Input error";
+  box.append(b, document.createElement("br"), message);
+  $("results").replaceChildren(box);
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
 
+async function pasteText(id) {
+  const box = $(id);
   try {
     const text = await navigator.clipboard.readText();
-
-    if (!text) {
-      showError("Your clipboard is empty.");
-      return;
-    }
-
+    if (!text) { box.focus(); return; }
     box.value = text;
-    document.getElementById("results").innerHTML = "";
+    resetOutput();
   } catch (e) {
+    // Clipboard blocked: just focus the box so the user can paste manually.
     box.focus();
-    showError("Clipboard access was blocked. Tap and hold inside the text box, then choose Paste.");
   }
 }
 
-function showError(message) {
-  document.getElementById("results").innerHTML =
-    '<div class="error"><b>Input error</b><br>' +
-    message + '</div>';
+function parseGrid(text) {
+  let rows = text.split(/\n/).map(clean).filter(r => r.length);
+  const w = parseInt($("gridWidth").value, 10);
+
+  if (rows.length === 1 && w > 0) {
+    const long = rows[0];
+    if (long.length % w !== 0) {
+      return { error: `The puzzle has ${long.length} letters, which doesn't divide evenly into rows of ${w}.` };
+    }
+    rows = [];
+    for (let i = 0; i < long.length; i += w) rows.push(long.slice(i, i + w));
+  }
+
+  const width = rows[0].length;
+  const bad = rows.findIndex(r => r.length !== width);
+  if (bad !== -1) {
+    return { error: `Row ${bad + 1} has ${rows[bad].length} letters, but row 1 has ${width}. Every row needs the same number of letters.` };
+  }
+  return { rows };
+}
+
+function parseWords(text) {
+  let parts = text.split(/[\n,;]+/).map(clean).filter(Boolean);
+  // A single line like "CAT DOG BIRD" is treated as space-separated words.
+  if (!/[\n,;]/.test(text.trim())) {
+    parts = text.split(/\s+/).map(clean).filter(Boolean);
+  }
+  return [...new Set(parts)];
+}
+
+function findWord(rows, word) {
+  const height = rows.length, width = rows[0].length;
+  const matches = [];
+  const seen = new Set();
+
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      for (const [dr, dc, direction, arrow] of directions) {
+        const endR = r + dr * (word.length - 1);
+        const endC = c + dc * (word.length - 1);
+        if (endR < 0 || endR >= height || endC < 0 || endC >= width) continue;
+
+        let ok = true;
+        for (let i = 0; i < word.length; i++) {
+          if (rows[r + dr * i][c + dc * i] !== word[i]) { ok = false; break; }
+        }
+        if (!ok) continue;
+
+        // Palindromes and 1-letter words match in opposite directions: keep one.
+        const a = r + "," + c, b = endR + "," + endC;
+        const key = a < b ? a + "|" + b : b + "|" + a;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const cells = [];
+        for (let i = 0; i < word.length; i++) cells.push({ r: r + dr * i, c: c + dc * i });
+        matches.push({ r, c, endR, endC, direction, arrow, cells });
+      }
+    }
+  }
+  return matches;
 }
 
 function solve() {
-  const puzzleText = document.getElementById("puzzle").value.trim();
-  const wordText = document.getElementById("words").value.trim();
-
-  const output = document.getElementById("results");
-  const gridBox = document.getElementById("grid");
-
-  output.innerHTML = "";
-  gridBox.innerHTML = "";
-  wordResults = [];
-  selectedMatch = null;
+  const puzzleText = $("puzzle").value.trim();
+  const wordText = $("words").value.trim();
+  resetOutput();
 
   if (!puzzleText || !wordText) {
     showError("Please enter both the puzzle letters and the word list.");
     return;
   }
 
-  const rows = puzzleText.split(/\n/)
-    .map(r => clean(r))
-    .filter(r => r.length);
+  const parsed = parseGrid(puzzleText);
+  if (parsed.error) { showError(parsed.error); return; }
 
-  const words = wordText.split(/[\n,;]+/)
-    .map(clean).filter(Boolean);
-
-  if (!rows.length || !words.length) {
+  const words = parseWords(wordText);
+  if (!parsed.rows.length || !words.length) {
     showError("Your puzzle or word list contains no usable letters.");
     return;
   }
 
-  const width = rows[0].length;
-
-  if (rows.some(r => r.length !== width)) {
-    showError("Your puzzle rows have different lengths. Make sure every row has the same number of letters.");
-    return;
-  }
-
-  if (width < 2 || rows.length < 2) {
-    showError("Your puzzle must have at least 2 rows and 2 columns.");
-    return;
-  }
-
-  const height = rows.length;
-
-  currentGrid = rows;
-
-  const hits = new Set();
+  currentGrid = parsed.rows;
   let foundCount = 0;
-  const uniqueWords = [...new Set(words)];
 
-  for (const word of uniqueWords) {
-    let matches = [];
-
-    for (let r = 0; r < height; r++) {
-      for (let c = 0; c < width; c++) {
-        for (const [dr, dc, direction, arrow] of directions) {
-          const endR = r + dr * (word.length - 1);
-          const endC = c + dc * (word.length - 1);
-
-          if (endR < 0 || endR >= height ||
-              endC < 0 || endC >= width) continue;
-
-          let match = true;
-
-          for (let i = 0; i < word.length; i++) {
-            if (rows[r + dr * i][c + dc * i] !== word[i]) {
-              match = false;
-              break;
-            }
-          }
-
-          if (match) {
-            const cells = [];
-
-            for (let i = 0; i < word.length; i++) {
-              const cell = {
-                r: r + dr * i,
-                c: c + dc * i
-              };
-
-              cells.push(cell);
-              hits.add(cell.r + "," + cell.c);
-            }
-
-            matches.push({
-              r, c, endR, endC,
-              direction, arrow, cells
-            });
-          }
-        }
-      }
-    }
-
+  words.forEach(word => {
+    const matches = findWord(currentGrid, word);
     wordResults.push({ word, matches });
-
     if (matches.length) foundCount++;
-  }
+  });
 
-  output.innerHTML =
-    `<h3>Found ${foundCount} / ${uniqueWords.length} words</h3>`;
+  const output = $("results");
+  const heading = document.createElement("h2");
+  heading.textContent = `Found ${foundCount} / ${words.length} words`;
+  output.appendChild(heading);
 
   wordResults.forEach((item, wordIndex) => {
-    if (item.matches.length) {
-      item.matches.forEach((m, matchIndex) => {
-        const card = document.createElement("div");
-
-        card.className = "found";
-        card.dataset.wordIndex = wordIndex;
-        card.dataset.matchIndex = matchIndex;
-
-        const title = document.createElement("b");
-        title.textContent = item.word;
-
-        const arrow = document.createElement("span");
-        arrow.className = "word-arrow";
-        arrow.textContent = m.arrow;
-
-        card.appendChild(title);
-        card.appendChild(arrow);
-
-        const coordinates = document.createElement("div");
-        coordinates.innerHTML =
-          `Start: Row ${m.r + 1}, Column ${m.c + 1}<br>` +
-          `End: Row ${m.endR + 1}, Column ${m.endC + 1}<br>` +
-          `Direction: ${m.direction}`;
-
-        card.appendChild(coordinates);
-
-        card.addEventListener("click", () => {
-          selectWord(wordIndex, matchIndex);
-        });
-
-        output.appendChild(card);
-      });
-    } else {
+    if (!item.matches.length) {
       const card = document.createElement("div");
       card.className = "missing";
       card.textContent = `✗ ${item.word} — Not found`;
       output.appendChild(card);
+      return;
     }
+
+    item.matches.forEach((m, matchIndex) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "found";
+      card.dataset.wordIndex = wordIndex;
+      card.dataset.matchIndex = matchIndex;
+      card.style.setProperty("--swatch", `hsl(${hueFor(wordIndex)} 65% 45%)`);
+
+      const title = document.createElement("b");
+      title.textContent = item.word;
+
+      const arrow = document.createElement("span");
+      arrow.className = "word-arrow";
+      arrow.textContent = m.arrow;
+      arrow.setAttribute("aria-hidden", "true");
+
+      card.append(title, arrow);
+
+      if (item.matches.length > 1 && matchIndex === 0) {
+        const count = document.createElement("span");
+        count.className = "count";
+        count.textContent = `(${item.matches.length} matches)`;
+        card.appendChild(count);
+      }
+
+      const coords = document.createElement("div");
+      coords.textContent =
+        `Start: row ${m.r + 1}, col ${m.c + 1} · End: row ${m.endR + 1}, col ${m.endC + 1} · ${m.direction}`;
+      card.appendChild(coords);
+
+      card.addEventListener("click", () => selectWord(wordIndex, matchIndex));
+      output.appendChild(card);
+    });
   });
 
   renderGrid();
+  $("grid").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function selectWord(wordIndex, matchIndex) {
-  if (
-    selectedMatch &&
+  const same = selectedMatch &&
     selectedMatch.wordIndex === wordIndex &&
-    selectedMatch.matchIndex === matchIndex
-  ) {
-    selectedMatch = null;
-  } else {
-    selectedMatch = { wordIndex, matchIndex };
-  }
+    selectedMatch.matchIndex === matchIndex;
+  selectedMatch = same ? null : { wordIndex, matchIndex };
 
-  renderResultsSelection();
-  renderGrid();
-}
-
-function renderResultsSelection() {
   document.querySelectorAll(".found").forEach(card => {
-    const isSelected = selectedMatch &&
+    const sel = selectedMatch &&
       Number(card.dataset.wordIndex) === selectedMatch.wordIndex &&
       Number(card.dataset.matchIndex) === selectedMatch.matchIndex;
-
-    card.classList.toggle("selected", !!isSelected);
+    card.classList.toggle("selected", !!sel);
+    card.setAttribute("aria-pressed", sel ? "true" : "false");
   });
+
+  renderGrid();
+  if (selectedMatch) $("grid").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function renderGrid() {
-  const gridBox = document.getElementById("grid");
+  const gridBox = $("grid");
   gridBox.innerHTML = "";
-
   if (!currentGrid.length) return;
 
   const height = currentGrid.length;
   const width = currentGrid[0].length;
-  const hits = new Set();
+  const hits = new Map(); // "r,c" -> hue, or -1 when selected
 
   if (selectedMatch) {
-    const match = wordResults[selectedMatch.wordIndex]
-      .matches[selectedMatch.matchIndex];
-
-    match.cells.forEach(cell => {
-      hits.add(cell.r + "," + cell.c);
-    });
+    wordResults[selectedMatch.wordIndex].matches[selectedMatch.matchIndex]
+      .cells.forEach(cell => hits.set(cell.r + "," + cell.c, -1));
   } else {
-    wordResults.forEach(item => {
-      item.matches.forEach(match => {
-        match.cells.forEach(cell => {
-          hits.add(cell.r + "," + cell.c);
-        });
+    wordResults.forEach((item, wi) => {
+      item.matches.forEach(m => {
+        m.cells.forEach(cell => hits.set(cell.r + "," + cell.c, hueFor(wi)));
       });
     });
   }
 
-  gridBox.style.gridTemplateColumns =
-    `repeat(${width}, minmax(22px, 1fr))`;
+  // Shrink cells for wide grids so they fit phone screens.
+  const fontSize = width <= 12 ? 14 : width <= 16 ? 12 : width <= 22 ? 10 : 8;
+  const minCell = width <= 16 ? 20 : 14;
+  gridBox.style.gridTemplateColumns = `repeat(${width}, minmax(${minCell}px, 1fr))`;
+  gridBox.style.fontSize = fontSize + "px";
 
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
       const cell = document.createElement("div");
+      cell.className = "cell";
+      const hue = hits.get(r + "," + c);
 
-      cell.className = "cell" +
-        (hits.has(r + "," + c) ? " hit" : "");
+      if (hue === -1) {
+        cell.classList.add("sel");
+      } else if (hue !== undefined) {
+        cell.classList.add("hit");
+        cell.style.background = `hsl(${hue} 65% 38%)`;
+      }
 
       cell.textContent = currentGrid[r][c];
       gridBox.appendChild(cell);
     }
   }
 }
+
+document.querySelectorAll("[data-paste]").forEach(b =>
+  b.addEventListener("click", () => pasteText(b.dataset.paste)));
+document.querySelectorAll("[data-clear]").forEach(b =>
+  b.addEventListener("click", () => { $(b.dataset.clear).value = ""; resetOutput(); }));
+$("solveBtn").addEventListener("click", solve);
+// Theme toggle: follows the system setting until the user taps the button.
+(function () {
+  const root = document.documentElement;
+  const systemDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+  $("themeBtn").addEventListener("click", () => {
+    const isDark = root.dataset.theme ? root.dataset.theme === "dark" : systemDark();
+    root.dataset.theme = isDark ? "light" : "dark";
+  });
+})();
 </script>
 
 </body>
