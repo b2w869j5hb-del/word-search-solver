@@ -83,8 +83,8 @@ body {
 
 main { max-width: 650px; margin: auto; }
 
-header { text-align: center; padding: 22px 10px; position: relative; }
-#themeBtn { position: absolute; top: 14px; right: 4px; background: var(--btn); color: var(--btn-text); padding: 8px 11px; font-size: 16px; }
+header { text-align: center; padding: 22px 52px; position: relative; }
+#themeBtn { position: absolute; top: 18px; right: 0; background: var(--btn); color: var(--btn-text); padding: 8px 11px; font-size: 16px; }
 header h1 { font-size: 27px; margin: 0 0 8px; }
 header p { color: var(--muted); margin: 0; font-size: 14px; }
 
@@ -115,6 +115,8 @@ textarea {
 }
 
 input[type="number"] { width: 80px; padding: 8px; }
+
+#puzzle { white-space: pre; overflow: auto; max-width: 100%; display: block; }
 
 textarea:focus, input:focus { outline: 2px solid var(--accent); }
 
@@ -190,7 +192,9 @@ details p, details ol { font-size: 14px; line-height: 1.7; color: var(--muted); 
 
 .cell {
   background: var(--cell);
-  padding: 6px 2px;
+  padding: 4px 0;
+  line-height: 1.1;
+  overflow: hidden;
   text-align: center;
   font-weight: bold;
   border-radius: 3px;
@@ -222,16 +226,12 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px
     <li>Tap a found word to highlight its location.</li>
   </ol>
   <p>The solver checks horizontal, vertical, diagonal, and backwards directions.
-  If your puzzle pasted as one long line, enter the grid width below the puzzle box.</p>
+ </p>
 </details>
 
 <div class="card">
   <label for="puzzle">Puzzle letters</label>
-  <textarea id="puzzle" placeholder="Paste your puzzle grid here..."></textarea>
-  <div class="width-row">
-    <label for="gridWidth">Grid width (only if puzzle is one line):</label>
-    <input type="number" id="gridWidth" min="1" inputmode="numeric">
-  </div>
+  <textarea id="puzzle" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="characters" placeholder="Paste your puzzle grid here..."></textarea>
   <div class="controls">
     <button class="secondary" data-paste="puzzle">Paste</button>
     <button class="secondary" data-clear="puzzle">Clear</button>
@@ -318,8 +318,16 @@ async function pasteText(id) {
 
 function parseGrid(text) {
   let rows = text.split(/\n/).map(clean).filter(r => r.length);
-  const w = parseInt($("gridWidth").value, 10);
+  let w = 0;
+  if (!(w > 0) && rows.length === 1) {
+    const root = Math.round(Math.sqrt(rows[0].length));
+    if (root > 1 && root * root === rows[0].length) w = root; // e.g. 625 letters -> 25x25
+  }
 
+  if (w > 0 && rows.length > 1) {
+    // A width was entered: ignore the pasted line breaks and re-split by width.
+    rows = [rows.join("")];
+  }
   if (rows.length === 1 && w > 0) {
     const long = rows[0];
     if (long.length % w !== 0) {
@@ -499,9 +507,9 @@ function renderGrid() {
   }
 
   // Shrink cells for wide grids so they fit phone screens.
-  const fontSize = width <= 12 ? 14 : width <= 16 ? 12 : width <= 22 ? 10 : 8;
-  const minCell = width <= 16 ? 20 : 14;
-  gridBox.style.gridTemplateColumns = `repeat(${width}, minmax(${minCell}px, 1fr))`;
+  const fontSize = width <= 12 ? 14 : width <= 16 ? 12 : width <= 20 ? 10 : width <= 26 ? 8 : 6;
+  gridBox.style.gap = width > 16 ? "2px" : "3px";
+  gridBox.style.gridTemplateColumns = `repeat(${width}, minmax(0, 1fr))`;
   gridBox.style.fontSize = fontSize + "px";
 
   for (let r = 0; r < height; r++) {
